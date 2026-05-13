@@ -717,6 +717,4 @@ async def deploy_tines(url: str, api_key: str, code: str, filename: str) -> dict
         "status": "success",
         "message": f"Story deployed to Tines"
     }
-    if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
