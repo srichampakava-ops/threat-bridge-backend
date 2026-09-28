@@ -9,6 +9,17 @@ client = Groq(
     api_key=os.environ.get("GROQ_API_KEY")
 )
 
+# Model is configurable via the GROQ_MODEL environment variable (set it in Render).
+# llama-3.3-70b-versatile was retired by Groq on 2026-08-16.
+# Recommended replacements: openai/gpt-oss-120b or qwen/qwen3.6-27b
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+
+# gpt-oss only accepts "low", "medium" or "high" for reasoning_effort
+GROQ_REASONING_EFFORT = os.environ.get("GROQ_REASONING_EFFORT", "low")
+
+# Reasoning tokens count against max_tokens, so keep this well above the JSON size
+GROQ_MAX_TOKENS = int(os.environ.get("GROQ_MAX_TOKENS", "8000"))
+
 
 def clean_json_response(text):
     text = text.strip()
@@ -16,6 +27,13 @@ def clean_json_response(text):
         text = text.replace("```json", "")
         text = text.replace("```", "")
         text = text.strip()
+
+    # Keep only the outermost JSON object in case the model adds extra text
+    start = text.find("{")
+    end = text.rfind("}") + 1
+    if start != -1 and end != 0:
+        text = text[start:end]
+
     return text
 
 
@@ -100,7 +118,7 @@ IMPORTANT RULES:
 
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=GROQ_MODEL,
             messages=[
                 {
                     "role": "user",
@@ -108,7 +126,8 @@ IMPORTANT RULES:
                 }
             ],
             temperature=0.1,
-            max_tokens=2000
+            max_tokens=GROQ_MAX_TOKENS,
+            reasoning_effort=GROQ_REASONING_EFFORT
         )
 
         response_text = clean_json_response(
@@ -118,7 +137,8 @@ IMPORTANT RULES:
         result = json.loads(response_text)
         return result
 
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"CORRELATION JSON ERROR: {str(e)}")
         return {
             "are_related": False,
             "confidence_percentage": 0,
@@ -134,6 +154,7 @@ IMPORTANT RULES:
         }
 
     except Exception as e:
+        print(f"CORRELATION ERROR: {str(e)}")
         return {
             "are_related": False,
             "confidence_percentage": 0,
