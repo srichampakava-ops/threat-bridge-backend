@@ -11,6 +11,17 @@ client = Groq(
     api_key=os.environ.get("GROQ_API_KEY")
 )
 
+# Model is configurable via the GROQ_MODEL environment variable (set it in Render).
+# llama-3.3-70b-versatile was retired by Groq on 2026-08-16.
+# Recommended replacements: openai/gpt-oss-120b or qwen/qwen3.6-27b
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
+
+# gpt-oss only accepts "low", "medium" or "high" for reasoning_effort
+GROQ_REASONING_EFFORT = os.environ.get("GROQ_REASONING_EFFORT", "low")
+
+# Reasoning tokens count against max_tokens, so keep this well above the JSON size
+GROQ_MAX_TOKENS = int(os.environ.get("GROQ_MAX_TOKENS", "8000"))
+
 # Daily token tracking
 daily_token_count = 0
 MAX_DAILY_TOKENS = 90000
@@ -1213,7 +1224,7 @@ Tines:
 
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=GROQ_MODEL,
             messages=[
                 {
                     "role": "user",
@@ -1221,7 +1232,8 @@ Tines:
                 }
             ],
             temperature=0.1,
-            max_tokens=3000
+            max_tokens=GROQ_MAX_TOKENS,
+            reasoning_effort=GROQ_REASONING_EFFORT
         )
 
         response_text = response.choices[0].message.content
@@ -1372,7 +1384,7 @@ SOC REPORT:
 
     try:
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=GROQ_MODEL,
             messages=[
                 {
                     "role": "user",
@@ -1380,7 +1392,8 @@ SOC REPORT:
                 }
             ],
             temperature=0.1,
-            max_tokens=3000
+            max_tokens=GROQ_MAX_TOKENS,
+            reasoning_effort=GROQ_REASONING_EFFORT
         )
 
         response_text = clean_json_response(
